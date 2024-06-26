@@ -2,7 +2,6 @@ import { compare, hash } from "bcryptjs";
 import { Secret, JwtPayload, sign, verify } from 'jsonwebtoken';
 import 'dotenv/config'
 
-
 export const passwordHash = async (password: string) => {
     const hashedPassword = await hash(password, 10);
     return hashedPassword;

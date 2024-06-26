@@ -11,15 +11,25 @@ export class UserServices {
     };
 
     getUserByEmail = async (email: string) => {
-        const sql = 'SELECT * FROM users WHERE email = ?';
-        const [rows] = await connection.promise().query(sql, email);
-        return rows;
+        try {
+            const sql = 'SELECT * FROM users WHERE email = ?';
+            const [rows] = await connection.promise().query(sql, email);
+            const data = rows[0] as User;
+            return data;
+        } catch (error) {
+            throw new Error(error);
+        }
     }
 
     getUserByName = async (username: string) => {
-        const sql = 'SELECT * FROM users WHERE username = ?';
-        const [rows] = await connection.promise().query(sql, username);
-        return rows;
+        try {
+            const sql = 'SELECT * FROM users WHERE username = ?';
+            const [rows] = await connection.promise().query(sql, username);
+            const data = rows[0] as User;
+            return data;
+        } catch (error) {
+            throw new Error(error);
+        }
     }
 
     getUserById = async (id: string): Promise<User> => {
@@ -44,4 +54,27 @@ export class UserServices {
     //     const [result] = await connection.promise().query(sql, [data, id]);
     //     return result;
     // }
+
+    googleLogin = async (req: any) => {
+        if (!req.user) {
+            return false;
+        }
+        const data = {
+            username: req.user.firstName + " " + req.user.lastName,
+            email: req.user.email,
+            isThirdParty: true,
+            thirdPartyProvider: 'google',
+            thrirdPartyRefreshToken: req.user.refreshToken,
+        }
+        await this.createUser(data);
+
+        const res = await this.getUserByEmail(data.email);
+        const result = {
+            id: res.id,
+            username: res.username,
+            email: res.email,
+        }
+
+        return result;
+    }
 }

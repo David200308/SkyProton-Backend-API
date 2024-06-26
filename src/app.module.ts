@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UserController } from './controllers/user';
 import { UserServices } from './services/user';
 import { ConfigModule } from '@nestjs/config';
+import { GoogleStrategy } from './services/google.strategy';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -9,6 +10,6 @@ import { ConfigModule } from '@nestjs/config';
     envFilePath: '.env',
   })],
   controllers: [UserController],
-  providers: [UserServices],
+  providers: [UserServices, GoogleStrategy],
 })
 export class AppModule {}

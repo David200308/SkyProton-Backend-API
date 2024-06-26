@@ -1,21 +1,16 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { UserServices } from '../services/user';
 import { SignInSchema, SignUpSchema } from '../schemas/user';
 import { generateToken, passwordHash, passwordVerify, verifyToken } from '../utils/auth';
 import { Response, Request } from 'express';
-import 'dotenv/config'
+import { GoogleOAuthGuard } from '../services/google-oauth.guard';
 
 @Controller("user")
 export class UserController {
     constructor(private readonly userService: UserServices) { }
 
-    @Get(':id')
-    async getUser(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!id)
-            return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'User ID is required'
-            });
-        
+    @Get()
+    async getUser(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
         if (!request.cookies.token)
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: 'Unauthorized'
@@ -29,13 +24,8 @@ export class UserController {
                 error: err
             });
         });
-        if (payload.aud.toString() !== id.toString()) {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized'
-            });
-        }
 
-        const data = await this.userService.getUserById(id).catch((err) => {
+        const data = await this.userService.getUserById(payload.aud).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
                 message: 'User not found'
@@ -53,7 +43,6 @@ export class UserController {
 
     @Post('register')
     async createUser(@Body() data: SignUpSchema, @Res({ passthrough: true }) response: Response) {
-        console.log(data)
         const password = await passwordHash(data.password);
         data.password = password;
         await this.userService.createUser(data).catch((err) => {
@@ -137,6 +126,32 @@ export class UserController {
         return response.status(HttpStatus.OK).json({
             message: 'User deleted'
         });
+    }
+
+    @Get('connect')
+    @UseGuards(GoogleOAuthGuard)
+    async googleAuth(@Req() req) {
+        console.log(req);
+    }
+
+    @Get('google-redirect')
+    @UseGuards(GoogleOAuthGuard)
+    async googleAuthRedirect(@Req() req, @Res({ passthrough: true }) response: Response) {
+        const res = await this.userService.googleLogin(req);
+        if (res) {
+            const payload = {
+                aud: res.id,
+                email: res.email,
+                username: res.username,
+            };
+            
+            const token = generateToken(payload);
+            
+            response.cookie('token', token, { secure: true });
+            return response.status(HttpStatus.OK).json({
+                message: 'Login successful, connected with Google'
+            });
+        }
     }
 
 }
