@@ -138,31 +138,25 @@ export class UserController {
     @Get('google-redirect')
     @UseGuards(GoogleOAuthGuard)
     async googleAuthRedirect(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
-        try {
-            const res = await this.userService.googleLogin(req);
+        const res = await this.userService.googleLogin(req);
 
-            if (res) {
-                const payload = {
-                    aud: res.id,
-                    email: res.email,
-                    username: res.username,
-                };
+        if (res) {
+            const payload = {
+                aud: res.id,
+                email: res.email,
+                username: res.username,
+            };
 
-                const token = generateToken(payload);
+            const token = generateToken(payload);
 
-                response.cookie('token', token, { secure: true });
-                return response.status(HttpStatus.OK).json({
-                    message: 'Login successful, connected with Google'
-                });
-            }
-            return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Login failed, connected with Google failed'
-            });
-        } catch (error) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Login failed, connected with Google failed'
+            response.cookie('token', token, { secure: true });
+            return response.status(HttpStatus.OK).json({
+                message: 'Login successful, connected with Google'
             });
         }
+        return response.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Login failed, connected with Google failed'
+        });
     }
 
     @Get("connect/facebook")
@@ -174,31 +168,25 @@ export class UserController {
     @Get("facebook-redirect")
     @UseGuards(AuthGuard("facebook"))
     async facebookAuthRedirect(@Req() req: Request, @Res({ passthrough: true }) response: Response): Promise<any> {
-        try {
-            const res = await this.userService.facebookLogin(req);
+        const res = await this.userService.facebookLogin(req);
             
-            if (res) {
-                const payload = {
-                    aud: res.id,
-                    email: res.email,
-                    username: res.username,
-                };
+        if (res) {
+            const payload = {
+                aud: res.id,
+                email: res.email,
+                username: res.username,
+            };
 
-                const token = generateToken(payload);
+            const token = generateToken(payload);
 
-                response.cookie('token', token, { secure: true });
-                return response.status(HttpStatus.OK).json({
-                    message: 'Login successful, connected with Facebook'
-                });
-            }
-            return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Login failed, connected with Facebook failed'
-            });
-        } catch (error) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Login failed, connected with Facebook failed'
+            response.cookie('token', token, { secure: true });
+            return response.status(HttpStatus.OK).json({
+                message: 'Login successful, connected with Facebook'
             });
         }
+        return response.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Login failed, connected with Facebook failed'
+        });
     }
 
 }
