@@ -40,11 +40,11 @@ $ docker-compose up -d
 #     - just add to dotenv file
 #
 # Linux:
-# 		- a) under /etc/mysql/mysql.conf.d/, mysql.cnf is a blank file; mysqld.cnf had bind-address and mysqlx-bind-address both = 127.0.0.1, I changed only the bind-address to 127.0.0.1,host.docker.internal thensystemctl restart mysql
+#     - a) under /etc/mysql/mysql.conf.d/, mysql.cnf is a blank file; mysqld.cnf had bind-address and mysqlx-bind-address both = 127.0.0.1, I changed only the bind-address to 127.0.0.1,host.docker.internal thensystemctl restart mysql
 #     - b) added an entry 172.17.0.1 host.docker.internal to /etc/hosts before
 #     - c) CREATE USER 'backend'@'%' IDENTIFIED BY '<password>';
 #     - d) GRANT ALL PRIVILEGES ON BACKEND.* to 'backend'@'%';
 #
-#	Case for Linux Solution souce: https://forums.docker.com/t/nodejs-docker-container-cant-connect-to-mysql-on-host/115221/6
+# Case for Linux Solution souce: https://forums.docker.com/t/nodejs-docker-container-cant-connect-to-mysql-on-host/115221/6
 # Thanks @drakeorfeo & @matthiasradde
 ```
