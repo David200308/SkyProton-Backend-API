@@ -47,6 +47,12 @@ export class UserServices {
         }
     }
 
+    activateUser = async (email: string) => {
+        const sql = 'UPDATE users SET isVerify = 1 WHERE email = ?';
+        const [result] = await connection.promise().query(sql, email);
+        return result;
+    }
+
     deleteUser = async (id: string) => {
         const sql = 'DELETE FROM users WHERE id = ?';
         const [result] = await connection.promise().query(sql, id);

@@ -1,12 +1,15 @@
 # Backend API
 
 ## Framework
+
 - Backend - Nest.JS (with Express.JS)
 - Database - MySQL
 - Container - Docker
+- Email Service - MailGun
 
 ## Auth Services
-- Email & Password
+
+- Email & Password (Need Email Verification)
 - Google OAuth
 - Facebook OAuth
 
