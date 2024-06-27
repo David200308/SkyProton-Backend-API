@@ -3,7 +3,8 @@ import { UserServices } from '../services/user';
 import { SignInSchema, SignUpSchema } from '../schemas/user';
 import { generateToken, passwordHash, passwordVerify, verifyToken } from '../utils/auth';
 import { Response, Request } from 'express';
-import { GoogleOAuthGuard } from '../services/google-oauth.guard';
+import { GoogleOAuthGuard } from '../services/oauth/google/google-oauth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller("user")
 export class UserController {
@@ -15,7 +16,7 @@ export class UserController {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: 'Unauthorized'
             });
-        
+
         const token = request.cookies.token;
         const payload = await verifyToken(token).catch((err) => {
             console.log(err);
@@ -95,12 +96,12 @@ export class UserController {
             return response.status(HttpStatus.BAD_REQUEST).json({
                 message: 'User ID is required'
             });
-        
+
         if (!request.cookies.token)
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: 'Unauthorized'
             });
-        
+
         const token = request.cookies.token;
         const payload = await verifyToken(token).catch((err) => {
             console.log(err);
@@ -128,28 +129,74 @@ export class UserController {
         });
     }
 
-    @Get('connect')
+    @Get('connect/google')
     @UseGuards(GoogleOAuthGuard)
-    async googleAuth(@Req() req) {
-        console.log(req);
+    async googleAuth() {
+        return HttpStatus.OK;
     }
 
     @Get('google-redirect')
     @UseGuards(GoogleOAuthGuard)
-    async googleAuthRedirect(@Req() req, @Res({ passthrough: true }) response: Response) {
-        const res = await this.userService.googleLogin(req);
-        if (res) {
-            const payload = {
-                aud: res.id,
-                email: res.email,
-                username: res.username,
-            };
+    async googleAuthRedirect(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
+        try {
+            const res = await this.userService.googleLogin(req);
+
+            if (res) {
+                const payload = {
+                    aud: res.id,
+                    email: res.email,
+                    username: res.username,
+                };
+
+                const token = generateToken(payload);
+
+                response.cookie('token', token, { secure: true });
+                return response.status(HttpStatus.OK).json({
+                    message: 'Login successful, connected with Google'
+                });
+            }
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Login failed, connected with Google failed'
+            });
+        } catch (error) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Login failed, connected with Google failed'
+            });
+        }
+    }
+
+    @Get("connect/facebook")
+    @UseGuards(AuthGuard("facebook"))
+    async facebookAuth(): Promise<any> {
+        return HttpStatus.OK;
+    }
+
+    @Get("facebook-redirect")
+    @UseGuards(AuthGuard("facebook"))
+    async facebookAuthRedirect(@Req() req: Request, @Res({ passthrough: true }) response: Response): Promise<any> {
+        try {
+            const res = await this.userService.facebookLogin(req);
             
-            const token = generateToken(payload);
-            
-            response.cookie('token', token, { secure: true });
-            return response.status(HttpStatus.OK).json({
-                message: 'Login successful, connected with Google'
+            if (res) {
+                const payload = {
+                    aud: res.id,
+                    email: res.email,
+                    username: res.username,
+                };
+
+                const token = generateToken(payload);
+
+                response.cookie('token', token, { secure: true });
+                return response.status(HttpStatus.OK).json({
+                    message: 'Login successful, connected with Facebook'
+                });
+            }
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Login failed, connected with Facebook failed'
+            });
+        } catch (error) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Login failed, connected with Facebook failed'
             });
         }
     }

@@ -1,9 +1,14 @@
 # Backend API
 
 ## Framework
-Backend - Nest.JS (with Express.JS)
-Database - MySQL
-Container - Docker
+- Backend - Nest.JS (with Express.JS)
+- Database - MySQL
+- Container - Docker
+
+## Auth Services
+- Email & Password
+- Google OAuth
+- Facebook OAuth
 
 ## Installation
 
