@@ -5,6 +5,7 @@ export type User = {
     password?: string;
     createAt: Date;
     updateAt: Date;
+    isVerify: boolean;
     isThirdParty: boolean;
     thirdPartyProvider?: string;
     thirdPartyId?: string;
@@ -32,6 +33,7 @@ export type ReturnUserSchema = {
     email: string;
     createAt: Date;
     updateAt: Date;
+    isVerify: boolean;
     isThirdParty: boolean;
     thirdPartyProvider?: string;
     thirdPartyId?: string;

@@ -5,6 +5,7 @@ import { generateToken, passwordHash, passwordVerify, verifyToken } from '../uti
 import { Response, Request } from 'express';
 import { GoogleOAuthGuard } from '../services/oauth/google/google-oauth.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { sendActivationEmail } from 'src/utils/email';
 
 @Controller("user")
 export class UserController {
@@ -46,14 +47,34 @@ export class UserController {
     async createUser(@Body() data: SignUpSchema, @Res({ passthrough: true }) response: Response) {
         const password = await passwordHash(data.password);
         data.password = password;
-        await this.userService.createUser(data).catch((err) => {
-            console.log(err);
+        try {
+            const result = await this.userService.createUser(data);
+            if (!result) {
+                return response.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Register failed'
+                });
+            }
+        } catch (error) {
             return response.status(HttpStatus.BAD_REQUEST).json({
                 message: 'Register failed'
             });
-        });
+        }
+
+        const payload = {
+            email: data.email,
+            username: data.username,
+            function: 'activation',
+        };
+        const token = generateToken(payload);
+        const res: boolean = await sendActivationEmail(data.email, token);
+        if (!res) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Activation email send failed'
+            });
+        }
+
         return response.status(HttpStatus.OK).json({
-            message: 'Register successful'
+            message: 'Register successful, wait for verification'
         });
     }
 
@@ -129,6 +150,33 @@ export class UserController {
         });
     }
 
+    @Get('activate/:email/:token')
+    async activateUser(@Param('email') email: string, @Param('token') token: string, @Res({ passthrough: true }) response: Response) {
+        const payload = await verifyToken(token);
+        if (payload) {
+            if (payload.email !== email || payload.function !== 'activation') {
+                return response.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Invalid token or email'
+                });
+            }
+
+            await this.userService.activateUser(email).catch((err) => {
+                console.log(err);
+                return response.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Activation failed',
+                    error: err
+                });
+            });
+
+            return response.status(HttpStatus.OK).json({
+                message: 'User activated'
+            });
+        }
+        return response.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Invalid token'
+        });
+    }
+
     @Get('connect/google')
     @UseGuards(GoogleOAuthGuard)
     async googleAuth() {
@@ -147,8 +195,15 @@ export class UserController {
                 username: res.username,
             };
 
-            const token = generateToken(payload);
+            await this.userService.activateUser(res.email).catch((err) => {
+                console.log(err);
+                return response.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Activation failed',
+                    error: err
+                });
+            });
 
+            const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
                 message: 'Login successful, connected with Google'
@@ -177,8 +232,15 @@ export class UserController {
                 username: res.username,
             };
 
-            const token = generateToken(payload);
+            await this.userService.activateUser(res.email).catch((err) => {
+                console.log(err);
+                return response.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Activation failed',
+                    error: err
+                });
+            });
 
+            const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
                 message: 'Login successful, connected with Facebook'
