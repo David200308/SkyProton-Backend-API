@@ -5,6 +5,10 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class UserServices {
     createUser = async (data: SignUpSchema) => {
+        const searchUser = await this.getUserByEmail(data.email);
+        if (searchUser) {
+            throw new Error('User already exists');
+        }
         const sql = 'INSERT INTO users SET ?';
         const [result] = await connection.promise().query(sql, data);
         return result;
@@ -66,7 +70,43 @@ export class UserServices {
             thirdPartyProvider: 'google',
             thrirdPartyRefreshToken: req.user.refreshToken,
         }
-        await this.createUser(data);
+        const searchUser = await this.getUserByEmail(data.email);
+        if (searchUser) {
+            if (searchUser.thirdPartyProvider !== data.thirdPartyProvider) {
+                throw new Error('User already exists');
+            }
+        } else {
+            await this.createUser(data);
+        }
+
+        const res = await this.getUserByEmail(data.email);
+        const result = {
+            id: res.id,
+            username: res.username,
+            email: res.email,
+        }
+
+        return result;
+    }
+
+    facebookLogin = async (req: any) => {
+        if (!req.user) {
+            return false;
+        }
+        const data = {
+            username: req.user.user.firstName + " " + req.user.user.lastName,
+            email: req.user.user.email,
+            isThirdParty: true,
+            thirdPartyProvider: 'facebook',
+        }
+        const searchUser = await this.getUserByEmail(data.email);
+        if (searchUser) {
+            if (searchUser.thirdPartyProvider !== data.thirdPartyProvider) {
+                throw new Error('User already exists');
+            }
+        } else {
+            await this.createUser(data);
+        }
 
         const res = await this.getUserByEmail(data.email);
         const result = {
