@@ -51,3 +51,12 @@ $ docker-compose up -d
 # Case for Linux Solution souce: https://forums.docker.com/t/nodejs-docker-container-cant-connect-to-mysql-on-host/115221/6
 # Thanks @drakeorfeo & @matthiasradde
 ```
+
+## Running on Linux Server
+
+```bash
+# Setup Database & config first
+
+$ sudo chmod 777 deploy.sh
+$ sudo ./deploy.sh
+```
