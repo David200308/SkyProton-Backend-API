@@ -1,5 +1,5 @@
 export type User = {
-    id: string;
+    id: number;
     username: string;
     email: string;
     password?: string;
@@ -28,7 +28,7 @@ export type SignInSchema = {
 }
 
 export type ReturnUserSchema = {
-    id: string;
+    id: number;
     username: string;
     email: string;
     createAt: Date;

@@ -5,7 +5,7 @@ import { generateToken, passwordHash, passwordVerify, verifyToken } from '../uti
 import { Response, Request } from 'express';
 import { GoogleOAuthGuard } from '../services/oauth/google/google-oauth.guard';
 import { AuthGuard } from '@nestjs/passport';
-import { sendActivationEmail } from 'src/utils/email';
+import { sendActivationEmail, validateEmail } from '../utils/email';
 
 @Controller("user")
 export class UserController {
@@ -27,7 +27,7 @@ export class UserController {
             });
         });
 
-        const data = await this.userService.getUserById(payload.aud).catch((err) => {
+        const data = await this.userService.getUserById(parseInt(payload.aud)).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
                 message: 'User not found'
@@ -45,6 +45,16 @@ export class UserController {
 
     @Post('register')
     async createUser(@Body() data: SignUpSchema, @Res({ passthrough: true }) response: Response) {
+        if (!data.email || !data.password || !data.username) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Email, password, and username is required'
+            });
+        }
+        if (!validateEmail(data.email)) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Invalid email'
+            });
+        }
         const password = await passwordHash(data.password);
         data.password = password;
         try {
@@ -137,7 +147,7 @@ export class UserController {
             });
         }
 
-        await this.userService.deleteUser(id).catch((err) => {
+        await this.userService.deleteUser(parseInt(id)).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
                 message: 'User not found',
@@ -152,6 +162,16 @@ export class UserController {
 
     @Get('activate/:email/:token')
     async activateUser(@Param('email') email: string, @Param('token') token: string, @Res({ passthrough: true }) response: Response) {
+        if (!email || !token) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Email and token is required'
+            });
+        }
+        if (!validateEmail(email)) {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: 'Invalid email'
+            });
+        }
         const payload = await verifyToken(token);
         if (payload) {
             if (payload.email !== email || payload.function !== 'activation') {
@@ -190,7 +210,7 @@ export class UserController {
 
         if (res) {
             const payload = {
-                aud: res.id,
+                aud: (res.id).toString(),
                 email: res.email,
                 username: res.username,
             };
@@ -227,7 +247,7 @@ export class UserController {
             
         if (res) {
             const payload = {
-                aud: res.id,
+                aud: (res.id).toString(),
                 email: res.email,
                 username: res.username,
             };
