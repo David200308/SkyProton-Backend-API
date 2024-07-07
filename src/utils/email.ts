@@ -3,6 +3,11 @@ import 'dotenv/config';
 
 const domain = "noreply.skyproton.com";
 
+export function validateEmail(email: string) {
+    const re = /\S+@\S+\.\S+/;
+    return re.test(email);
+}
+
 export const sendActivationEmail = async (to: string, token: string) => {
     const apiEndpoint = `https://api.mailgun.net/v3/${domain}/messages`;
 

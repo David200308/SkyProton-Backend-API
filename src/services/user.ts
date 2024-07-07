@@ -36,7 +36,7 @@ export class UserServices {
         }
     }
 
-    getUserById = async (id: string): Promise<User> => {
+    getUserById = async (id: number): Promise<User> => {
         try {
             const sql = 'SELECT * FROM users WHERE id = ?';
             const [rows] = await connection.promise().query(sql, id);
@@ -53,7 +53,7 @@ export class UserServices {
         return result;
     }
 
-    deleteUser = async (id: string) => {
+    deleteUser = async (id: number) => {
         const sql = 'DELETE FROM users WHERE id = ?';
         const [result] = await connection.promise().query(sql, id);
         return result;
