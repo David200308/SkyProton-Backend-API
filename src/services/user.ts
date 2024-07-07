@@ -1,13 +1,14 @@
 import { connection } from "../database";
 import { SignUpSchema, User } from "../schemas/user";
 import { Injectable } from '@nestjs/common';
+import { USER_ALEADY_EXISTS } from "../const/user";
 
 @Injectable()
 export class UserServices {
     createUser = async (data: SignUpSchema) => {
         const searchUser = await this.getUserByEmail(data.email);
         if (searchUser) {
-            throw new Error('User already exists');
+            throw new Error(USER_ALEADY_EXISTS);
         }
         const sql = 'INSERT INTO users SET ?';
         const [result] = await connection.promise().query(sql, data);
@@ -79,7 +80,7 @@ export class UserServices {
         const searchUser = await this.getUserByEmail(data.email);
         if (searchUser) {
             if (searchUser.thirdPartyProvider !== data.thirdPartyProvider) {
-                throw new Error('User already exists');
+                throw new Error(USER_ALEADY_EXISTS);
             }
         } else {
             await this.createUser(data);
@@ -108,7 +109,7 @@ export class UserServices {
         const searchUser = await this.getUserByEmail(data.email);
         if (searchUser) {
             if (searchUser.thirdPartyProvider !== data.thirdPartyProvider) {
-                throw new Error('User already exists');
+                throw new Error(USER_ALEADY_EXISTS);
             }
         } else {
             await this.createUser(data);

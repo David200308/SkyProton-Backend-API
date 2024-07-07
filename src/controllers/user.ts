@@ -6,6 +6,30 @@ import { Response, Request } from 'express';
 import { GoogleOAuthGuard } from '../services/oauth/google/google-oauth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { sendActivationEmail, validateEmail } from '../utils/email';
+import { 
+    ACTIVATION_EMAIL_SEND_FAILED, 
+    ACTIVATION_FAILED, 
+    DELETE_REQUIRE_USERID, 
+    DELETE_SUCCESSFUL, 
+    EMAIL_ACTIVATION_INVALID,
+    EMAIL_ACTIVATION_REQUIRE, 
+    EMAIL_ACTIVATION_SUCCESSFUL, 
+    INVALID_EMAIL, 
+    LOGIN_FAILED_WITH_FACEBOOK, 
+    LOGIN_FAILED_WITH_GOOGLE, 
+    LOGIN_SUCCESSFUL, 
+    LOGIN_SUCCESSFUL_WITH_FACEBOOK, 
+    LOGIN_SUCCESSFUL_WITH_GOOGLE, 
+    PASSWORD_INCORRECT, 
+    REGISTER_FAILED, 
+    REGISTER_REQUIRE, 
+    REGISTER_SUCCESSFUL_WAIT_FOR_VERIFICATION, 
+    UNAUTHORIZED, 
+    USER_NOT_FOUND 
+} from '../const/user';
+import { 
+    TOKEN_FUNCTION_ACTIVATION 
+} from '../const/token';
 
 @Controller("user")
 export class UserController {
@@ -15,14 +39,14 @@ export class UserController {
     async getUser(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
         if (!request.cookies.token)
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized'
+                message: UNAUTHORIZED,
             });
 
         const token = request.cookies.token;
         const payload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized',
+                message: UNAUTHORIZED,
                 error: err
             });
         });
@@ -30,7 +54,7 @@ export class UserController {
         const data = await this.userService.getUserById(parseInt(payload.aud)).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
-                message: 'User not found'
+                message: USER_NOT_FOUND
             });
         });
         if (data && typeof data === 'object' && "password" in data) {
@@ -39,7 +63,7 @@ export class UserController {
         }
 
         return response.status(HttpStatus.NOT_FOUND).json({
-            message: 'User not found'
+            message: USER_NOT_FOUND
         });
     }
 
@@ -47,12 +71,12 @@ export class UserController {
     async createUser(@Body() data: SignUpSchema, @Res({ passthrough: true }) response: Response) {
         if (!data.email || !data.password || !data.username) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Email, password, and username is required'
+                message: REGISTER_REQUIRE
             });
         }
         if (!validateEmail(data.email)) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Invalid email'
+                message: INVALID_EMAIL
             });
         }
         const password = await passwordHash(data.password);
@@ -61,30 +85,30 @@ export class UserController {
             const result = await this.userService.createUser(data);
             if (!result) {
                 return response.status(HttpStatus.BAD_REQUEST).json({
-                    message: 'Register failed'
+                    message: REGISTER_FAILED
                 });
             }
         } catch (error) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Register failed'
+                message: REGISTER_FAILED
             });
         }
 
         const payload = {
             email: data.email,
             username: data.username,
-            function: 'activation',
+            function: TOKEN_FUNCTION_ACTIVATION,
         };
         const token = generateToken(payload);
         const res: boolean = await sendActivationEmail(data.email, token);
         if (!res) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Activation email send failed'
+                message: ACTIVATION_EMAIL_SEND_FAILED
             });
         }
 
         return response.status(HttpStatus.OK).json({
-            message: 'Register successful, wait for verification'
+            message: REGISTER_SUCCESSFUL_WAIT_FOR_VERIFICATION
         });
     }
 
@@ -93,12 +117,12 @@ export class UserController {
         const user = await this.userService.getUserByEmail(data.email);
         if (!user) {
             return response.status(HttpStatus.NOT_FOUND).json({
-                message: 'User not found'
+                message: USER_NOT_FOUND
             });
         }
         if (!passwordVerify(data.password, user[0].password)) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Password incorrect'
+                message: PASSWORD_INCORRECT
             });
         }
 
@@ -112,7 +136,7 @@ export class UserController {
 
         response.cookie('token', token, { secure: true });
         return response.status(HttpStatus.OK).json({
-            message: 'Login successful'
+            message: LOGIN_SUCCESSFUL
         });
     }
 
@@ -125,38 +149,38 @@ export class UserController {
     async deleteUser(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
         if (!id)
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'User ID is required'
+                message: DELETE_REQUIRE_USERID
             });
 
         if (!request.cookies.token)
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized'
+                message: UNAUTHORIZED
             });
 
         const token = request.cookies.token;
         const payload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized',
+                message: UNAUTHORIZED,
                 error: err
             });
         });
         if (payload.aud.toString() !== id.toString()) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Unauthorized'
+                message: UNAUTHORIZED
             });
         }
 
         await this.userService.deleteUser(parseInt(id)).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
-                message: 'User not found',
+                message: USER_NOT_FOUND,
                 error: err
             });
         });
 
         return response.status(HttpStatus.OK).json({
-            message: 'User deleted'
+            message: DELETE_SUCCESSFUL
         });
     }
 
@@ -164,36 +188,36 @@ export class UserController {
     async activateUser(@Param('email') email: string, @Param('token') token: string, @Res({ passthrough: true }) response: Response) {
         if (!email || !token) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Email and token is required'
+                message: EMAIL_ACTIVATION_REQUIRE
             });
         }
         if (!validateEmail(email)) {
             return response.status(HttpStatus.BAD_REQUEST).json({
-                message: 'Invalid email'
+                message: INVALID_EMAIL
             });
         }
         const payload = await verifyToken(token);
         if (payload) {
             if (payload.email !== email || payload.function !== 'activation') {
                 return response.status(HttpStatus.BAD_REQUEST).json({
-                    message: 'Invalid token or email'
+                    message: EMAIL_ACTIVATION_INVALID
                 });
             }
 
             await this.userService.activateUser(email).catch((err) => {
                 console.log(err);
                 return response.status(HttpStatus.BAD_REQUEST).json({
-                    message: 'Activation failed',
+                    message: ACTIVATION_FAILED,
                     error: err
                 });
             });
 
             return response.status(HttpStatus.OK).json({
-                message: 'User activated'
+                message: EMAIL_ACTIVATION_SUCCESSFUL
             });
         }
         return response.status(HttpStatus.BAD_REQUEST).json({
-            message: 'Invalid token'
+            message: EMAIL_ACTIVATION_INVALID
         });
     }
 
@@ -218,7 +242,7 @@ export class UserController {
             await this.userService.activateUser(res.email).catch((err) => {
                 console.log(err);
                 return response.status(HttpStatus.BAD_REQUEST).json({
-                    message: 'Activation failed',
+                    message: ACTIVATION_FAILED,
                     error: err
                 });
             });
@@ -226,11 +250,11 @@ export class UserController {
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
-                message: 'Login successful, connected with Google'
+                message: LOGIN_SUCCESSFUL_WITH_GOOGLE
             });
         }
         return response.status(HttpStatus.BAD_REQUEST).json({
-            message: 'Login failed, connected with Google failed'
+            message: LOGIN_FAILED_WITH_GOOGLE
         });
     }
 
@@ -255,7 +279,7 @@ export class UserController {
             await this.userService.activateUser(res.email).catch((err) => {
                 console.log(err);
                 return response.status(HttpStatus.BAD_REQUEST).json({
-                    message: 'Activation failed',
+                    message: ACTIVATION_FAILED,
                     error: err
                 });
             });
@@ -263,11 +287,11 @@ export class UserController {
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
-                message: 'Login successful, connected with Facebook'
+                message: LOGIN_SUCCESSFUL_WITH_FACEBOOK
             });
         }
         return response.status(HttpStatus.BAD_REQUEST).json({
-            message: 'Login failed, connected with Facebook failed'
+            message: LOGIN_FAILED_WITH_FACEBOOK
         });
     }
 
