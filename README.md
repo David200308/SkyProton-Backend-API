@@ -6,6 +6,7 @@
 - Database - MySQL
 - Container - Docker
 - Email Service - MailGun
+- Payment Gateway - Stripe
 
 ## Auth Services
 
