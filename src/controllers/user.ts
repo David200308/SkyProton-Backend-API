@@ -120,16 +120,16 @@ export class UserController {
                 message: USER_NOT_FOUND
             });
         }
-        if (!passwordVerify(data.password, user[0].password)) {
+        if (!passwordVerify(data.password, user.password)) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: PASSWORD_INCORRECT
             });
         }
 
         const payload = {
-            aud: user[0].id,
-            email: user[0].email,
-            username: user[0].username,
+            aud: user.id.toString(),
+            email: user.email,
+            username: user.username,
         };
 
         const token = generateToken(payload);
