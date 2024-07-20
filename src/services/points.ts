@@ -6,14 +6,18 @@ export class PointsServices {
     addPoints = async (id: string, needAddPoints: string) => {
         const searchIdSQL = `SELECT * FROM points where userId = ?`;
         const [searchId] = await connection.promise().query(searchIdSQL, id);
-        if (searchId) {
+        if (searchId[0]) {
             const updatePointsSQL = `UPDATE points SET points = points + ? WHERE userId = ?`;
-            const [result] = await connection.promise().query(updatePointsSQL, [needAddPoints, id]);
-            return result;
+            await connection.promise().query(updatePointsSQL, [needAddPoints, id]);
+            const res = this.getPoints(id);
+
+            return res;
         }
         const insertPointsSQL = `INSERT INTO points SET ?`;
-        const [result] = await connection.promise().query(insertPointsSQL, { userId: id, points: needAddPoints });
-        return result;
+        await connection.promise().query(insertPointsSQL, { userId: id, points: needAddPoints });
+        const res = this.getPoints(id);
+        
+        return res;
     };
 
     getPoints = async (id: string) => {
