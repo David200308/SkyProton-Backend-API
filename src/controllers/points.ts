@@ -10,12 +10,12 @@ export class PointsController {
 
     @Get(":id")
     async getUserPoints(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!request.cookies.token)
+        if (!request.headers['authorization'])
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
             });
 
-        const token = request.cookies.token;
+        const token = request.headers['authorization'].replace('Bearer ', '');
         await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
@@ -31,12 +31,12 @@ export class PointsController {
 
     @Post()
     async addPoints(@Body() body: { id: string, points: string }, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!request.cookies.token)
+        if (!request.headers['authorization'])
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
             });
 
-        const token = request.cookies.token;
+        const token = request.headers['authorization'].replace('Bearer ', '');
         await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
