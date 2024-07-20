@@ -25,6 +25,7 @@ export const generateToken = (payload: JwtPayload) => {
 export const verifyToken = async (token: string) => {
     try {
         const payload = verify(token, process.env.JWT_SECRET as Secret);
+        console.log(payload);
         return payload;
     } catch (error) {
         return error;
