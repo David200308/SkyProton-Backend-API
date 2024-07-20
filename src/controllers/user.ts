@@ -136,7 +136,8 @@ export class UserController {
 
         response.cookie('token', token, { secure: true });
         return response.status(HttpStatus.OK).json({
-            message: LOGIN_SUCCESSFUL
+            message: LOGIN_SUCCESSFUL, 
+            token: token
         });
     }
 
@@ -250,7 +251,8 @@ export class UserController {
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
-                message: LOGIN_SUCCESSFUL_WITH_GOOGLE
+                message: LOGIN_SUCCESSFUL_WITH_GOOGLE,
+                token: token
             });
         }
         return response.status(HttpStatus.BAD_REQUEST).json({
@@ -287,7 +289,8 @@ export class UserController {
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
             return response.status(HttpStatus.OK).json({
-                message: LOGIN_SUCCESSFUL_WITH_FACEBOOK
+                message: LOGIN_SUCCESSFUL_WITH_FACEBOOK,
+                token: token
             });
         }
         return response.status(HttpStatus.BAD_REQUEST).json({
