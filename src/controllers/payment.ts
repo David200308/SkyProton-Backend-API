@@ -6,6 +6,7 @@ import { createStripePaymentSession } from '../utils/stripe';
 import { PaymentServices } from '../services/payment';
 import { CreatePaymentSchema } from '../schemas/payment';
 import { CREATE_PAYMENT_ERROR, CREATE_PAYMENT_REQUIRE, PAYMENT_NOT_FOUND, STRIPE_PAYMENT_CALLBACK_REQUIRE } from '../const/payment';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Controller("payment")
 export class PaymentController {
@@ -19,7 +20,7 @@ export class PaymentController {
             });
 
         const token = request.cookies.token;
-        const payload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
@@ -27,6 +28,11 @@ export class PaymentController {
             });
         });
 
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
         const data = await this.paymentService.getPaymentRecordByUserId(parseInt(payload.aud));
 
         return response.status(HttpStatus.OK).json(data);
@@ -40,7 +46,7 @@ export class PaymentController {
             });
 
         const token = request.cookies.token;
-        const payload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
@@ -48,6 +54,11 @@ export class PaymentController {
             });
         });
 
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
         const data = await this.paymentService.getPaymentRecordByUserIdByPaymentId(parseInt(payload.aud), parseInt(id)).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.NOT_FOUND).json({
@@ -66,7 +77,7 @@ export class PaymentController {
             });
 
         const token = request.cookies.token;
-        const payload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
@@ -79,7 +90,12 @@ export class PaymentController {
                 message: CREATE_PAYMENT_REQUIRE
             });
         }
-
+        
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
         if (data.userId !== parseInt(payload.aud)) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
