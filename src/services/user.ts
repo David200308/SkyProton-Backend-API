@@ -1,7 +1,15 @@
-import { connection } from "../database";
+import { connection } from "../database/database";
 import { SignUpSchema, User } from "../schemas/user";
 import { Injectable } from '@nestjs/common';
 import { USER_ALEADY_EXISTS } from "../const/user";
+import { 
+    ACTIVATE_USER_SQL,
+    CREATE_USER_SQL, 
+    DELETE_USER_SQL, 
+    GET_USER_BY_EMAIL_SQL,
+    GET_USER_BY_ID_SQL,
+    GET_USER_BY_NAME_SQL
+} from "../database/sql/user";
 
 @Injectable()
 export class UserServices {
@@ -10,14 +18,14 @@ export class UserServices {
         if (searchUser) {
             throw new Error(USER_ALEADY_EXISTS);
         }
-        const sql = 'INSERT INTO users SET ?';
+        const sql = CREATE_USER_SQL;
         const [result] = await connection.promise().query(sql, data);
         return result;
     };
 
     getUserByEmail = async (email: string) => {
         try {
-            const sql = 'SELECT * FROM users WHERE email = ?';
+            const sql = GET_USER_BY_EMAIL_SQL;
             const [rows] = await connection.promise().query(sql, email);
             const data = rows[0] as User;
             return data;
@@ -28,7 +36,7 @@ export class UserServices {
 
     getUserByName = async (username: string) => {
         try {
-            const sql = 'SELECT * FROM users WHERE username = ?';
+            const sql = GET_USER_BY_NAME_SQL;
             const [rows] = await connection.promise().query(sql, username);
             const data = rows[0] as User;
             return data;
@@ -39,7 +47,7 @@ export class UserServices {
 
     getUserById = async (id: number): Promise<User> => {
         try {
-            const sql = 'SELECT * FROM users WHERE id = ?';
+            const sql = GET_USER_BY_ID_SQL;
             const [rows] = await connection.promise().query(sql, id);
             const data = rows[0] as User;
             return data;
@@ -49,13 +57,13 @@ export class UserServices {
     }
 
     activateUser = async (email: string) => {
-        const sql = 'UPDATE users SET isVerify = 1 WHERE email = ?';
+        const sql = ACTIVATE_USER_SQL;
         const [result] = await connection.promise().query(sql, email);
         return result;
     }
 
     deleteUser = async (id: number) => {
-        const sql = 'DELETE FROM users WHERE id = ?';
+        const sql = DELETE_USER_SQL;
         const [result] = await connection.promise().query(sql, id);
         return result;
     }
