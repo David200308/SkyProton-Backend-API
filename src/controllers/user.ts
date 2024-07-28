@@ -30,6 +30,7 @@ import {
 import { 
     TOKEN_FUNCTION_ACTIVATION 
 } from '../const/token';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Controller("user")
 export class UserController {
@@ -43,13 +44,19 @@ export class UserController {
             });
 
         const token = request.cookies.token;
-        const payload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
         });
+
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
 
         const data = await this.userService.getUserById(parseInt(payload.aud)).catch((err) => {
             console.log(err);
@@ -159,13 +166,19 @@ export class UserController {
             });
 
         const token = request.cookies.token;
-        const payload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload = await verifyToken(token).catch((err) => {
             console.log(err);
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
         });
+
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
         if (payload.aud.toString() !== id.toString()) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
