@@ -128,7 +128,7 @@ export class UserController {
                 message: USER_NOT_FOUND
             });
         }
-        if (passwordVerify(data.password, user.password)) {
+        if (!(await passwordVerify(data.password, user.password))) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: PASSWORD_INCORRECT
             });

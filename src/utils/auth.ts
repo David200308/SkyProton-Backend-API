@@ -26,6 +26,5 @@ export const verifyToken = async (token: string) => {
     const payload = verify(token, process.env.JWT_SECRET as Secret);
     if (!payload) throw new Error('Invalid token');
     if (typeof payload === 'string') throw new Error('Invalid token');
-    console.log(payload);
     return payload;
 };
