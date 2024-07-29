@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { UserServices } from '../services/user';
 import { SignInSchema, SignUpSchema } from '../schemas/user';
 import { generateToken, passwordHash, passwordVerify, verifyToken } from '../utils/auth';
@@ -31,6 +31,7 @@ import {
     TOKEN_FUNCTION_ACTIVATION 
 } from '../const/token';
 import { JwtPayload } from 'jsonwebtoken';
+import { ssoPage } from '../utils/ssoPage';
 
 @Controller("user")
 export class UserController {
@@ -127,7 +128,7 @@ export class UserController {
                 message: USER_NOT_FOUND
             });
         }
-        if (!passwordVerify(data.password, user.password)) {
+        if (passwordVerify(data.password, user.password)) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
                 message: PASSWORD_INCORRECT
             });
@@ -148,10 +149,57 @@ export class UserController {
         });
     }
 
-    //   @Patch()
-    //   async updateUser(id: string, data: User) {
-    //     return this.userService.updateUser(id, data);
-    //   }
+    @Post('login/token')
+    async loginWithToken(@Body() data: { type: string }, @Req() request: Request , @Res({ passthrough: true }) response: Response) {
+        if (!request.cookies.token && !data.type && data.type !== 'token') {
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: UNAUTHORIZED
+            });
+        }
+
+        const payload: JwtPayload = await verifyToken(request.cookies.token).catch((err) => {
+            console.log(err);
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED,
+                error: err
+            });
+        });
+
+        if (!(typeof payload.aud === 'string')) {
+            return response.status(HttpStatus.UNAUTHORIZED).json({
+                message: UNAUTHORIZED
+            });
+        }
+
+        const user = await this.userService.getUserById(parseInt(payload.aud));
+        if (!user) {
+            return response.status(HttpStatus.NOT_FOUND).json({
+                message: USER_NOT_FOUND
+            });
+        }
+
+        const newPayload = {
+            aud: user.id.toString(),
+            email: user.email,
+            username: user.username,
+        };
+
+        const token = generateToken(newPayload);
+
+        response.cookie('token', token, { secure: true });
+        return response.status(HttpStatus.OK).json({
+            message: LOGIN_SUCCESSFUL,
+            token: token
+        });
+    }
+
+    @Get('/sso')
+    async sso(@Query('appId') appId: string, @Query('redirect') redirect: string) {
+        if (!appId || !redirect) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        return ssoPage(redirect);
+    }
 
     @Delete(":id")
     async deleteUser(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
