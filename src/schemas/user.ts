@@ -9,7 +9,6 @@ export type User = {
     isThirdParty: boolean;
     thirdPartyProvider?: string;
     thirdPartyId?: string;
-    thrirdPartyRefreshToken?: string;
 }
 
 export type SignUpSchema = {
@@ -19,7 +18,6 @@ export type SignUpSchema = {
     isThirdParty: boolean;
     thirdPartyProvider?: string;
     thirdPartyId?: string;
-    thrirdPartyRefreshToken?: string;
 }
 
 export type SignInSchema = {
