@@ -83,7 +83,6 @@ export class UserServices {
             email: req.user.email,
             isThirdParty: true,
             thirdPartyProvider: 'google',
-            thrirdPartyRefreshToken: req.user.refreshToken,
         }
         const searchUser = await this.getUserByEmail(data.email);
         if (searchUser) {

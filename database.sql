@@ -11,7 +11,6 @@ CREATE TABLE users IF NOT EXISTS (
     isVerify BOOLEAN NOT NULL DEFAULT FALSE,
     isThirdParty BOOLEAN NOT NULL DEFAULT FALSE,
     thirdPartyProvider VARCHAR(255),
-    thrirdPartyRefreshToken VARCHAR(255),
     thirdPartyId VARCHAR(255)
 );
 

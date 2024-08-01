@@ -24,6 +24,7 @@ import {
     REGISTER_FAILED, 
     REGISTER_REQUIRE, 
     REGISTER_SUCCESSFUL_WAIT_FOR_VERIFICATION, 
+    SSO_REQUIRE, 
     UNAUTHORIZED, 
     USER_NOT_FOUND 
 } from '../const/user';
@@ -194,12 +195,20 @@ export class UserController {
     }
 
     @Get('/sso')
-    async sso(@Query('appId') appId: string, @Query('redirect') redirect: string) {
+    async sso(@Query('appId') appId: string, @Query('redirect') redirect: string, @Res({ passthrough: true }) response: Response) {
         if (!appId || !redirect) {
-            return HttpStatus.BAD_REQUEST;
+            return response.status(HttpStatus.BAD_REQUEST).json({
+                message: SSO_REQUIRE
+            });
         }
         return ssoPage(redirect);
     }
+
+    @Post('/sso/refreshtoken')
+    
+
+    @Post('/sso/gentoken')
+    
 
     @Delete(":id")
     async deleteUser(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {

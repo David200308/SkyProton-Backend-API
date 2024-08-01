@@ -19,3 +19,4 @@ export const LOGIN_SUCCESSFUL_WITH_GOOGLE = 'Login successful, connected with Go
 export const LOGIN_FAILED_WITH_GOOGLE = 'Login failed, connected with Google';
 export const LOGIN_SUCCESSFUL_WITH_FACEBOOK = 'Login successful, connected with Facebook';
 export const LOGIN_FAILED_WITH_FACEBOOK = 'Login failed, connected with Facebook';
+export const SSO_REQUIRE = 'AppId and redirectUrl is required';
