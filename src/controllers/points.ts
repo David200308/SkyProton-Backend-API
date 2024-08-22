@@ -10,44 +10,50 @@ export class PointsController {
 
     @Get(":id")
     async getUserPoints(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!request.headers['authorization'])
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (!request.headers['authorization']) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
             });
+            return;
+        }
 
         const token = request.headers['authorization'].replace('Bearer ', '');
         await verifyToken(token).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
+            return;
         });
 
         const data = await this.pointsServices.getPoints(id);
 
-        return response.status(HttpStatus.OK).json(data);
+        response.status(HttpStatus.OK).json(data);
     }
 
     @Post()
     async addPoints(@Body() body: { id: string, points: string }, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!request.headers['authorization'])
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (!request.headers['authorization']) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
             });
+            return;
+        }
 
         const token = request.headers['authorization'].replace('Bearer ', '');
         await verifyToken(token).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
+            return;
         });
 
         const data = await this.pointsServices.addPoints(body.id, body.points);
 
-        return response.status(HttpStatus.OK).json(data);
+        response.status(HttpStatus.OK).json(data);
     }
 
 }
