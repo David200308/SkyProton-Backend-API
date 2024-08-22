@@ -40,38 +40,44 @@ export class UserController {
 
     @Get()
     async getUser(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!request.cookies.token)
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (!request.cookies.token) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
             });
+            return;
+        }
 
         const token = request.cookies.token;
-        const payload: JwtPayload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload | void = await verifyToken(token).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
+            return;
         });
 
-        if (!(typeof payload.aud === 'string')) {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (typeof payload !== "object" || !(typeof payload.aud === 'string')) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
             });
+            return;
         }
 
         const data = await this.userService.getUserById(parseInt(payload.aud)).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.NOT_FOUND).json({
+            response.status(HttpStatus.NOT_FOUND).json({
                 message: USER_NOT_FOUND
             });
+            return;
         });
         if (data && typeof data === 'object' && "password" in data) {
             delete data.password;
-            return response.status(HttpStatus.OK).json(data);
-        }
+            response.status(HttpStatus.OK).json(data);
+            return;
+        };
 
-        return response.status(HttpStatus.NOT_FOUND).json({
+        response.status(HttpStatus.NOT_FOUND).json({
             message: USER_NOT_FOUND
         });
     }
@@ -79,28 +85,32 @@ export class UserController {
     @Post('register')
     async createUser(@Body() data: SignUpSchema, @Res({ passthrough: true }) response: Response) {
         if (!data.email || !data.password || !data.username) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: REGISTER_REQUIRE
             });
+            return;
         }
         if (!validateEmail(data.email)) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: INVALID_EMAIL
             });
+            return;
         }
         const password = await passwordHash(data.password);
         data.password = password;
         try {
             const result = await this.userService.createUser(data);
             if (!result) {
-                return response.status(HttpStatus.BAD_REQUEST).json({
+                response.status(HttpStatus.BAD_REQUEST).json({
                     message: REGISTER_FAILED
                 });
+                return;
             }
         } catch (error) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: REGISTER_FAILED
             });
+            return;
         }
 
         const payload = {
@@ -111,12 +121,13 @@ export class UserController {
         const token = generateToken(payload);
         const res: boolean = await sendActivationEmail(data.email, token);
         if (!res) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: ACTIVATION_EMAIL_SEND_FAILED
             });
+            return;
         }
 
-        return response.status(HttpStatus.OK).json({
+        response.status(HttpStatus.OK).json({
             message: REGISTER_SUCCESSFUL_WAIT_FOR_VERIFICATION
         });
     }
@@ -125,14 +136,16 @@ export class UserController {
     async login(@Body() data: SignInSchema, @Res({ passthrough: true }) response: Response) {
         const user = await this.userService.getUserByEmail(data.email);
         if (!user) {
-            return response.status(HttpStatus.NOT_FOUND).json({
+            response.status(HttpStatus.NOT_FOUND).json({
                 message: USER_NOT_FOUND
             });
+            return;
         }
         if (!(await passwordVerify(data.password, user.password))) {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: PASSWORD_INCORRECT
             });
+            return;
         }
 
         const payload = {
@@ -144,7 +157,7 @@ export class UserController {
         const token = generateToken(payload);
 
         response.cookie('token', token, { secure: true });
-        return response.status(HttpStatus.OK).json({
+        response.status(HttpStatus.OK).json({
             message: LOGIN_SUCCESSFUL, 
             token: token
         });
@@ -153,9 +166,10 @@ export class UserController {
     @Post('login/token')
     async loginWithToken(@Body() data: { type: string }, @Req() request: Request , @Res({ passthrough: true }) response: Response) {
         if (!request.cookies.token && !data.type && data.type !== 'token') {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: UNAUTHORIZED
             });
+            return;
         }
 
         const payload: JwtPayload = await verifyToken(request.cookies.token).catch((err) => {
@@ -174,9 +188,10 @@ export class UserController {
 
         const user = await this.userService.getUserById(parseInt(payload.aud));
         if (!user) {
-            return response.status(HttpStatus.NOT_FOUND).json({
+            response.status(HttpStatus.NOT_FOUND).json({
                 message: USER_NOT_FOUND
             });
+            return;
         }
 
         const newPayload = {
@@ -188,7 +203,7 @@ export class UserController {
         const token = generateToken(newPayload);
 
         response.cookie('token', token, { secure: true });
-        return response.status(HttpStatus.OK).json({
+        response.status(HttpStatus.OK).json({
             message: LOGIN_SUCCESSFUL,
             token: token
         });
@@ -197,9 +212,10 @@ export class UserController {
     @Get('/sso')
     async sso(@Query('appId') appId: string, @Query('redirect') redirect: string, @Res({ passthrough: true }) response: Response) {
         if (!appId || !redirect) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: SSO_REQUIRE
             });
+            return;
         }
         return ssoPage(redirect);
     }
@@ -212,45 +228,53 @@ export class UserController {
 
     @Delete(":id")
     async deleteUser(@Param('id') id: string, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
-        if (!id)
-            return response.status(HttpStatus.BAD_REQUEST).json({
+        if (!id) {
+             response.status(HttpStatus.BAD_REQUEST).json({
                 message: DELETE_REQUIRE_USERID
             });
+            return;
+        }
 
-        if (!request.cookies.token)
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (!request.cookies.token) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
             });
+            return;
+        }
 
         const token = request.cookies.token;
-        const payload: JwtPayload = await verifyToken(token).catch((err) => {
+        const payload: JwtPayload | void = await verifyToken(token).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED,
                 error: err
             });
+            return;
         });
 
-        if (!(typeof payload.aud === 'string')) {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+        if (typeof payload !== "object" || !(typeof payload.aud === 'string')) {
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
             });
+            return;
         }
         if (payload.aud.toString() !== id.toString()) {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
+            response.status(HttpStatus.UNAUTHORIZED).json({
                 message: UNAUTHORIZED
             });
+            return;
         }
 
         await this.userService.deleteUser(parseInt(id)).catch((err) => {
             console.log(err);
-            return response.status(HttpStatus.NOT_FOUND).json({
+            response.status(HttpStatus.NOT_FOUND).json({
                 message: USER_NOT_FOUND,
                 error: err
             });
+            return;
         });
 
-        return response.status(HttpStatus.OK).json({
+        response.status(HttpStatus.OK).json({
             message: DELETE_SUCCESSFUL
         });
     }
@@ -258,36 +282,41 @@ export class UserController {
     @Get('activate/:email/:token')
     async activateUser(@Param('email') email: string, @Param('token') token: string, @Res({ passthrough: true }) response: Response) {
         if (!email || !token) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: EMAIL_ACTIVATION_REQUIRE
             });
+            return;
         }
         if (!validateEmail(email)) {
-            return response.status(HttpStatus.BAD_REQUEST).json({
+            response.status(HttpStatus.BAD_REQUEST).json({
                 message: INVALID_EMAIL
             });
+            return;
         }
         const payload = await verifyToken(token);
         if (payload) {
             if (payload.email !== email || payload.function !== 'activation') {
-                return response.status(HttpStatus.BAD_REQUEST).json({
+                response.status(HttpStatus.BAD_REQUEST).json({
                     message: EMAIL_ACTIVATION_INVALID
                 });
+                return;
             }
 
             await this.userService.activateUser(email).catch((err) => {
                 console.log(err);
-                return response.status(HttpStatus.BAD_REQUEST).json({
+                response.status(HttpStatus.BAD_REQUEST).json({
                     message: ACTIVATION_FAILED,
                     error: err
                 });
+                return;
             });
 
-            return response.status(HttpStatus.OK).json({
+            response.status(HttpStatus.OK).json({
                 message: EMAIL_ACTIVATION_SUCCESSFUL
             });
+            return;
         }
-        return response.status(HttpStatus.BAD_REQUEST).json({
+        response.status(HttpStatus.BAD_REQUEST).json({
             message: EMAIL_ACTIVATION_INVALID
         });
     }
@@ -312,20 +341,22 @@ export class UserController {
 
             await this.userService.activateUser(res.email).catch((err) => {
                 console.log(err);
-                return response.status(HttpStatus.BAD_REQUEST).json({
+                response.status(HttpStatus.BAD_REQUEST).json({
                     message: ACTIVATION_FAILED,
                     error: err
                 });
+                return;
             });
 
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
-            return response.status(HttpStatus.OK).json({
+            response.status(HttpStatus.OK).json({
                 message: LOGIN_SUCCESSFUL_WITH_GOOGLE,
                 token: token
             });
+            return;
         }
-        return response.status(HttpStatus.BAD_REQUEST).json({
+        response.status(HttpStatus.BAD_REQUEST).json({
             message: LOGIN_FAILED_WITH_GOOGLE
         });
     }
@@ -350,20 +381,22 @@ export class UserController {
 
             await this.userService.activateUser(res.email).catch((err) => {
                 console.log(err);
-                return response.status(HttpStatus.BAD_REQUEST).json({
+                response.status(HttpStatus.BAD_REQUEST).json({
                     message: ACTIVATION_FAILED,
                     error: err
                 });
+                return;
             });
 
             const token = generateToken(payload);
             response.cookie('token', token, { secure: true });
-            return response.status(HttpStatus.OK).json({
+            response.status(HttpStatus.OK).json({
                 message: LOGIN_SUCCESSFUL_WITH_FACEBOOK,
                 token: token
             });
+            return;
         }
-        return response.status(HttpStatus.BAD_REQUEST).json({
+        response.status(HttpStatus.BAD_REQUEST).json({
             message: LOGIN_FAILED_WITH_FACEBOOK
         });
     }
